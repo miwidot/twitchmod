@@ -1,6 +1,22 @@
 TwitchMod Changelog
 ===================
 
+[2025-11-02 02:30] PRODUCTION READY: Hardcoded official Client ID - No setup needed!
+-----------------------------------------------------------------------------------
+- ADDED: Official TwitchMod Client ID hardcoded in production code
+- IMPROVED: Zero configuration for end users - just download and run!
+- SIMPLIFIED: Environment variable now optional, only for developers
+- CHANGED: getClientId() returns hardcoded ID by default, env var as override
+- UPDATED: All documentation to reflect "no setup required" for end users
+- PRODUCTION: Client ID: opez5azi81po1xb4hb581ikw3xo04y
+- User Experience: Download → Run → Connect → Done! No API keys needed!
+- Files modified:
+  - src/twitch/twitchauth.cpp - Hardcoded production Client ID
+  - README.md - "NO SETUP REQUIRED" for end users
+  - SETUP.md - Split into "End Users" (no setup) and "Developers" (optional)
+  - changelog.txt - This entry
+- Now like Chatterino, Chatty, etc. - works out of the box!
+
 [2025-11-02 02:11] MAJOR: Switched to Device Code Grant Flow (twitch.tv/activate!)
 -----------------------------------------------------------------------------------
 - CHANGED: Complete OAuth rewrite from Implicit Grant to Device Code Grant Flow

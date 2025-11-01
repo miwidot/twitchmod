@@ -1,12 +1,31 @@
 # TwitchMod Setup Guide
 
-## Step 1: Register Your Twitch Application
+## For End Users
+
+✅ **NO SETUP REQUIRED!**
+
+TwitchMod comes with a built-in official Client ID. Just:
+1. Download or build TwitchMod
+2. Run the app
+3. Click "File → Connect to Twitch"
+4. Enter the activation code shown in the dialog
+5. Done!
+
+**That's it!** No API keys, no registration, no configuration needed.
+
+---
+
+## For Developers (Optional)
+
+If you're **forking TwitchMod** or developing, you may want to use your own Client ID:
+
+### Step 1: Register Your Twitch Application
 
 1. Go to https://dev.twitch.tv/console/apps
 2. Log in with your Twitch account
 3. Click **"Register Your Application"**
 4. Fill in the application details:
-   - **Name**: `TwitchMod` (or any name you prefer)
+   - **Name**: `TwitchMod-Dev` (or any name you prefer)
    - **OAuth Redirect URLs**: `http://localhost` (not used but required field)
    - **Category**: `Application Integration`
 5. Click **"Create"**
@@ -15,9 +34,9 @@
 
 ✅ **No Client Secret needed!** TwitchMod uses **Device Code Grant Flow** - the cleanest OAuth method for desktop apps!
 
-## Step 2: Configure Client ID
+### Step 2: Configure Client ID (Development Override)
 
-⚠️ **IMPORTANT**: TwitchMod uses **Device Code Grant Flow** - you only need the **Client ID**, NO Client Secret required!
+⚠️ **ONLY FOR DEVELOPERS** - Normal users don't need this!
 
 ### macOS / Linux
 
@@ -113,13 +132,15 @@ TwitchMod.exe
 
 ## Troubleshooting
 
-### "TWITCH_CLIENT_ID environment variable not set"
+### "TWITCH_CLIENT_ID environment variable not set" (Development only)
 
-Make sure you've set the environment variables correctly:
+This warning only appears if you're developing. For normal users, the app has a built-in Client ID.
+
+If you're a developer and see this:
 - On macOS/Linux: Run `echo $TWITCH_CLIENT_ID` to verify
 - On Windows: Run `echo %TWITCH_CLIENT_ID%` (cmd) or `$env:TWITCH_CLIENT_ID` (PowerShell)
 
-If empty, follow Step 2 again and restart your terminal/shell.
+If empty, follow the Developer setup steps above.
 
 ### "status":400,"message":"invalid client"
 

@@ -22,15 +22,18 @@ TwitchAuth::TwitchAuth(QObject *parent)
 
 QString TwitchAuth::getClientId()
 {
+    // Official TwitchMod Client ID - hardcoded for production use
+    // Users can override this with TWITCH_CLIENT_ID environment variable for development
     QProcessEnvironment env = QProcessEnvironment::systemEnvironment();
     QString clientId = env.value("TWITCH_CLIENT_ID");
 
-    if (clientId.isEmpty()) {
-        qWarning("TWITCH_CLIENT_ID environment variable not set!");
-        return QString();
+    if (!clientId.isEmpty()) {
+        // Development override
+        return clientId;
     }
 
-    return clientId;
+    // Production Client ID
+    return "opez5azi81po1xb4hb581ikw3xo04y";
 }
 
 

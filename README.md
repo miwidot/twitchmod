@@ -117,31 +117,33 @@ macdeployqt TwitchMod.app -dmg
 
 ## Setup & Configuration
 
-⚠️ **IMPORTANT**: You must configure OAuth credentials before using TwitchMod!
+✅ **NO SETUP REQUIRED!** TwitchMod comes with a built-in Client ID.
 
-See **[SETUP.md](SETUP.md)** for detailed setup instructions.
+Just download, build, and run! The app will work immediately.
 
-### Quick Start
+### Quick Start (End Users)
 
-1. **Register Twitch App** at https://dev.twitch.tv/console/apps
-   - OAuth Redirect URL: `http://localhost` (not used, just required by form)
-   - Get your Client ID (no secret needed!)
+1. **Download/Build** TwitchMod
+2. **Run** the app
+3. **Click** File → Connect to Twitch
+4. **Enter code** at twitch.tv/activate
+5. **Done!** Start moderating
 
-2. **Set Environment Variable:**
+✨ **That's it!** No API keys, no configuration files, no environment variables needed.
 
-   ✅ **Only Client ID needed** - TwitchMod uses **Device Code Grant Flow** (cleanest for desktop!)
+### Developer Setup (Optional)
 
-   **macOS/Linux:**
-   ```bash
-   export TWITCH_CLIENT_ID="your_client_id"
-   ```
+If you're forking TwitchMod and want to use your own Client ID:
 
-   **Windows PowerShell:**
-   ```powershell
-   $env:TWITCH_CLIENT_ID="your_client_id"
-   ```
+**macOS/Linux:**
+```bash
+export TWITCH_CLIENT_ID="your_client_id"
+```
 
-3. **Build and Run** - Follow building instructions above
+**Windows PowerShell:**
+```powershell
+$env:TWITCH_CLIENT_ID="your_client_id"
+```
 
 For complete instructions including troubleshooting, see **[SETUP.md](SETUP.md)**.
 
