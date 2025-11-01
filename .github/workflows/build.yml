@@ -1,0 +1,135 @@
+name: Build TwitchMod
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+  release:
+    types: [ created ]
+
+jobs:
+  build-macos:
+    runs-on: macos-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Install Qt
+      uses: jurplel/install-qt-action@v3
+      with:
+        version: '6.9.3'
+        host: 'mac'
+        target: 'desktop'
+        arch: 'clang_64'
+
+    - name: Configure CMake
+      run: |
+        mkdir build
+        cd build
+        cmake .. -DCMAKE_BUILD_TYPE=Release
+
+    - name: Build
+      run: |
+        cd build
+        cmake --build . --config Release
+
+    - name: Deploy Qt
+      run: |
+        cd build
+        macdeployqt TwitchMod.app -dmg
+
+    - name: Code sign
+      run: |
+        cd build
+        codesign --force --deep --sign - TwitchMod.app
+
+    - name: Create archive
+      run: |
+        cd build
+        zip -r TwitchMod-macOS.zip TwitchMod.app
+
+    - name: Upload artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: TwitchMod-macOS
+        path: build/TwitchMod-macOS.zip
+
+    - name: Upload DMG (if exists)
+      uses: actions/upload-artifact@v4
+      if: success()
+      with:
+        name: TwitchMod-macOS-DMG
+        path: build/TwitchMod.dmg
+      continue-on-error: true
+
+  build-windows:
+    runs-on: windows-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Install Qt
+      uses: jurplel/install-qt-action@v3
+      with:
+        version: '6.9.3'
+        host: 'windows'
+        target: 'desktop'
+        arch: 'win64_msvc2019_64'
+
+    - name: Setup MSVC
+      uses: ilammy/msvc-dev-cmd@v1
+
+    - name: Configure CMake
+      run: |
+        mkdir build
+        cd build
+        cmake .. -G "Visual Studio 17 2022" -A x64 -DCMAKE_BUILD_TYPE=Release
+
+    - name: Build
+      run: |
+        cd build
+        cmake --build . --config Release
+
+    - name: Deploy Qt
+      run: |
+        cd build/Release
+        windeployqt TwitchMod.exe --release --no-translations
+
+    - name: Create archive
+      run: |
+        cd build/Release
+        7z a ../../TwitchMod-Windows.zip *
+
+    - name: Upload artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: TwitchMod-Windows
+        path: TwitchMod-Windows.zip
+
+  release:
+    needs: [build-macos, build-windows]
+    runs-on: ubuntu-latest
+    if: github.event_name == 'release'
+
+    steps:
+    - name: Download macOS artifact
+      uses: actions/download-artifact@v4
+      with:
+        name: TwitchMod-macOS
+
+    - name: Download Windows artifact
+      uses: actions/download-artifact@v4
+      with:
+        name: TwitchMod-Windows
+
+    - name: Upload to Release
+      uses: softprops/action-gh-release@v1
+      with:
+        files: |
+          TwitchMod-macOS.zip
+          TwitchMod-Windows.zip
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

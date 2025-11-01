@@ -1,0 +1,64 @@
+# Build directories
+build*/
+*.user
+*.pro.user*
+
+# CMake
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+Makefile
+*.cmake
+!CMakeLists.txt
+
+# Qt
+*.qm
+*.pro.user
+*.qmlc
+moc_*.cpp
+ui_*.h
+qrc_*.cpp
+
+# C++
+*.o
+*.obj
+*.exe
+*.out
+*.app
+*.dll
+*.dylib
+*.so
+*.a
+*.lib
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Windows
+Thumbs.db
+*.stackdump
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+
+# Credentials (IMPORTANT!)
+*credentials*
+*secret*
+*.pem
+*.key
+.env
+
+# Logs
+*.log
+
+# Temporary
+tmp/
+temp/
