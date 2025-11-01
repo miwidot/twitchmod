@@ -7,6 +7,7 @@
 #include <QNetworkReply>
 #include <QJsonDocument>
 #include <QJsonObject>
+#include <QProcessEnvironment>
 
 TwitchAuth::TwitchAuth(QObject *parent)
     : QObject(parent)
@@ -18,6 +19,39 @@ TwitchAuth::TwitchAuth(QObject *parent)
             this, &TwitchAuth::onAuthCodeReceived);
     connect(m_oauthServer, &OAuthServer::authorizationError,
             this, &TwitchAuth::onAuthError);
+}
+
+QString TwitchAuth::getClientId()
+{
+    QProcessEnvironment env = QProcessEnvironment::systemEnvironment();
+    QString clientId = env.value("TWITCH_CLIENT_ID");
+
+    if (clientId.isEmpty()) {
+        qWarning("TWITCH_CLIENT_ID environment variable not set!");
+        return QString();
+    }
+
+    return clientId;
+}
+
+QString TwitchAuth::getClientSecret()
+{
+    QProcessEnvironment env = QProcessEnvironment::systemEnvironment();
+    QString clientSecret = env.value("TWITCH_CLIENT_SECRET");
+
+    if (clientSecret.isEmpty()) {
+        qWarning("TWITCH_CLIENT_SECRET environment variable not set!");
+        return QString();
+    }
+
+    return clientSecret;
+}
+
+QString TwitchAuth::getRedirectUri()
+{
+    QProcessEnvironment env = QProcessEnvironment::systemEnvironment();
+    QString redirectUri = env.value("TWITCH_REDIRECT_URI", DEFAULT_REDIRECT_URI);
+    return redirectUri;
 }
 
 QStringList TwitchAuth::getRequiredScopes()
@@ -86,11 +120,17 @@ void TwitchAuth::startAuthentication()
     emit authenticationStarted();
 
     // Build OAuth URL
+    QString clientId = getClientId();
+    if (clientId.isEmpty()) {
+        emit authenticationFailed("TWITCH_CLIENT_ID environment variable not set");
+        return;
+    }
+
     QUrl authUrl("https://id.twitch.tv/oauth2/authorize");
     QUrlQuery query;
 
-    query.addQueryItem("client_id", CLIENT_ID);
-    query.addQueryItem("redirect_uri", REDIRECT_URI);
+    query.addQueryItem("client_id", clientId);
+    query.addQueryItem("redirect_uri", getRedirectUri());
     query.addQueryItem("response_type", "code");
     query.addQueryItem("scope", getRequiredScopes().join(" "));
 
@@ -119,16 +159,24 @@ void TwitchAuth::onAuthError(const QString &error)
 
 void TwitchAuth::exchangeCodeForToken(const QString &code)
 {
+    QString clientId = getClientId();
+    QString clientSecret = getClientSecret();
+
+    if (clientId.isEmpty() || clientSecret.isEmpty()) {
+        emit authenticationFailed("OAuth credentials not configured properly");
+        return;
+    }
+
     QUrl url("https://id.twitch.tv/oauth2/token");
     QNetworkRequest request(url);
     request.setHeader(QNetworkRequest::ContentTypeHeader, "application/x-www-form-urlencoded");
 
     QUrlQuery params;
-    params.addQueryItem("client_id", CLIENT_ID);
-    params.addQueryItem("client_secret", CLIENT_SECRET);
+    params.addQueryItem("client_id", clientId);
+    params.addQueryItem("client_secret", clientSecret);
     params.addQueryItem("code", code);
     params.addQueryItem("grant_type", "authorization_code");
-    params.addQueryItem("redirect_uri", REDIRECT_URI);
+    params.addQueryItem("redirect_uri", getRedirectUri());
 
     QNetworkReply *reply = m_networkManager->post(request, params.toString(QUrl::FullyEncoded).toUtf8());
     connect(reply, &QNetworkReply::finished, this, &TwitchAuth::onTokenReplyFinished);

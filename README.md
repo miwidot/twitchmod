@@ -117,30 +117,33 @@ macdeployqt TwitchMod.app -dmg
 
 ## Setup & Configuration
 
-### 1. Register Twitch Application
+⚠️ **IMPORTANT**: You must configure OAuth credentials before using TwitchMod!
 
-Before using TwitchMod, you need to register an application with Twitch:
+See **[SETUP.md](SETUP.md)** for detailed setup instructions.
 
-1. Go to https://dev.twitch.tv/console/apps
-2. Click "Register Your Application"
-3. Fill in:
-   - **Name**: TwitchMod (or your preferred name)
-   - **OAuth Redirect URLs**: `http://localhost:8080/callback`
-   - **Category**: Chat Bot
-4. Click "Create"
-5. Copy your **Client ID** and **Client Secret**
+### Quick Start
 
-### 2. Configure TwitchMod
+1. **Register Twitch App** at https://dev.twitch.tv/console/apps
+   - OAuth Redirect URL: `http://localhost:8080/callback`
+   - Get your Client ID and Client Secret
 
-Open `src/twitch/twitchauth.h` and replace:
-```cpp
-static constexpr const char* CLIENT_ID = "YOUR_CLIENT_ID_HERE";
-static constexpr const char* CLIENT_SECRET = "YOUR_CLIENT_SECRET_HERE";
-```
+2. **Set Environment Variables:**
 
-### 3. Build and Run
+   **macOS/Linux:**
+   ```bash
+   export TWITCH_CLIENT_ID="your_client_id"
+   export TWITCH_CLIENT_SECRET="your_client_secret"
+   ```
 
-Follow the building instructions above, then run the application.
+   **Windows PowerShell:**
+   ```powershell
+   $env:TWITCH_CLIENT_ID="your_client_id"
+   $env:TWITCH_CLIENT_SECRET="your_client_secret"
+   ```
+
+3. **Build and Run** - Follow building instructions above
+
+For complete instructions including troubleshooting, see **[SETUP.md](SETUP.md)**.
 
 ## Usage
 

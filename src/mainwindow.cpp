@@ -200,7 +200,7 @@ void MainWindow::onAuthenticationSucceeded(const QString &username)
 
     // Set up API with auth token
     m_twitchAPI->setAccessToken(m_twitchAuth->getAccessToken());
-    m_twitchAPI->setClientId(TwitchAuth::CLIENT_ID);
+    m_twitchAPI->setClientId(TwitchAuth::getClientId());
 
     statusBar()->showMessage("Connected as " + username, 5000);
 

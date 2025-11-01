@@ -1,0 +1,47 @@
+TwitchMod Changelog
+===================
+
+[2025-11-02 01:44] Fixed OAuth "invalid client" error
+------------------------------------------------------
+- FIXED: "status":400,"message":"invalid client" error when creating predictions/polls
+- ADDED: Environment variable support for OAuth credentials (TWITCH_CLIENT_ID, TWITCH_CLIENT_SECRET)
+- CHANGED: Removed hardcoded placeholder credentials from source code
+- SECURITY: OAuth credentials now read from environment variables instead of being hardcoded
+- ADDED: Created comprehensive SETUP.md with step-by-step instructions
+- UPDATED: README.md with quick start guide for environment variable configuration
+- IMPROVED: Better error messages when OAuth credentials are not configured
+- Files modified:
+  - src/twitch/twitchauth.h - Changed from static constexpr to static methods
+  - src/twitch/twitchauth.cpp - Added getClientId(), getClientSecret(), getRedirectUri()
+  - src/mainwindow.cpp - Updated to use TwitchAuth::getClientId()
+  - SETUP.md - New comprehensive setup guide
+  - README.md - Updated with environment variable instructions
+  - changelog.txt - Created changelog
+
+[2025-11-02 00:00] Initial Release - TwitchMod v1.0.0
+-----------------------------------------------------
+- ADDED: Professional Twitch moderator client with mIRC-style interface
+- ADDED: Qt6 C++ cross-platform implementation (Windows/macOS)
+- ADDED: OAuth 2.0 authentication with local callback server
+- ADDED: Twitch REST API integration for all moderator actions
+- ADDED: Predictions dialog with 2-10 outcomes, validation, duration control
+- ADDED: Polls dialog with 2-5 choices, Channel Points voting option
+- ADDED: Three-panel mIRC-style layout (channels, chat, users)
+- ADDED: User list with mod/VIP badges and context menu
+- ADDED: Channel list with "Moderating" and "Watching" categories
+- ADDED: Chat widget with Twitch-style dark theme
+- ADDED: CMake build system with Windows/macOS support
+- ADDED: GitHub Actions workflow for automated builds
+- ADDED: Build scripts for both platforms
+- ADDED: Comprehensive README with build instructions
+- OAuth scopes: All moderator, chat, AutoMod, predictions, polls scopes
+- Files created:
+  - src/main.cpp, mainwindow.cpp/h
+  - src/chatwidget.cpp/h, channellist.cpp/h, userlist.cpp/h
+  - src/predictiondialog.cpp/h, polldialog.cpp/h
+  - src/twitch/twitchauth.cpp/h, twitchapi.cpp/h, twitchwebsocket.cpp/h
+  - src/twitch/oauthserver.cpp/h
+  - CMakeLists.txt
+  - build-scripts/build-macos.sh, build-windows.bat
+  - .github/workflows/build.yml
+  - README.md

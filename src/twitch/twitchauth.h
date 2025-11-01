@@ -28,10 +28,14 @@ public:
     // Scopes needed for moderator client
     static QStringList getRequiredScopes();
 
-    // TODO: Replace with your actual Twitch App credentials
-    static constexpr const char* CLIENT_ID = "YOUR_CLIENT_ID_HERE";
-    static constexpr const char* CLIENT_SECRET = "YOUR_CLIENT_SECRET_HERE";
-    static constexpr const char* REDIRECT_URI = "http://localhost:8080/callback";
+    // OAuth credentials - can be set via environment variables:
+    // TWITCH_CLIENT_ID, TWITCH_CLIENT_SECRET
+    static QString getClientId();
+    static QString getClientSecret();
+    static QString getRedirectUri();
+
+    // Default redirect URI
+    static constexpr const char* DEFAULT_REDIRECT_URI = "http://localhost:8080/callback";
 
 signals:
     void authenticationStarted();
