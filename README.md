@@ -125,20 +125,20 @@ See **[SETUP.md](SETUP.md)** for detailed setup instructions.
 
 1. **Register Twitch App** at https://dev.twitch.tv/console/apps
    - OAuth Redirect URL: `http://localhost:8080/callback`
-   - Get your Client ID and Client Secret
+   - Get your Client ID (no secret needed!)
 
-2. **Set Environment Variables:**
+2. **Set Environment Variable:**
+
+   ✅ **Only Client ID needed** - TwitchMod uses Implicit Grant (no secret required!)
 
    **macOS/Linux:**
    ```bash
    export TWITCH_CLIENT_ID="your_client_id"
-   export TWITCH_CLIENT_SECRET="your_client_secret"
    ```
 
    **Windows PowerShell:**
    ```powershell
    $env:TWITCH_CLIENT_ID="your_client_id"
-   $env:TWITCH_CLIENT_SECRET="your_client_secret"
    ```
 
 3. **Build and Run** - Follow building instructions above

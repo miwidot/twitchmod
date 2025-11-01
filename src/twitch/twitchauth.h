@@ -28,10 +28,9 @@ public:
     // Scopes needed for moderator client
     static QStringList getRequiredScopes();
 
-    // OAuth credentials - can be set via environment variables:
-    // TWITCH_CLIENT_ID, TWITCH_CLIENT_SECRET
+    // OAuth credentials - can be set via environment variable:
+    // TWITCH_CLIENT_ID (no client secret needed with Implicit Grant!)
     static QString getClientId();
-    static QString getClientSecret();
     static QString getRedirectUri();
 
     // Default redirect URI
@@ -43,13 +42,11 @@ signals:
     void authenticationFailed(const QString &error);
 
 private slots:
-    void onAuthCodeReceived(const QString &code);
+    void onAuthCodeReceived(const QString &token);
     void onAuthError(const QString &error);
-    void onTokenReplyFinished();
     void onValidateReplyFinished();
 
 private:
-    void exchangeCodeForToken(const QString &code);
     void validateToken();
 
     QNetworkAccessManager *m_networkManager;

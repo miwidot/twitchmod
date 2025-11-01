@@ -1,6 +1,28 @@
 TwitchMod Changelog
 ===================
 
+[2025-11-02 01:51] MAJOR: Switched to Implicit Grant OAuth Flow (No Client Secret!)
+-----------------------------------------------------------------------------------
+- CHANGED: Complete OAuth flow rewrite from Authorization Code to Implicit Grant
+- REMOVED: Client Secret requirement completely (following Chatterino's approach)
+- CHANGED: OAuth request now uses response_type=token instead of response_type=code
+- REMOVED: Token exchange step - access token comes directly from Twitch
+- ADDED: JavaScript-based token extraction from URL fragment
+- IMPROVED: OAuth callback server now handles implicit grant with JavaScript redirect
+- SECURITY: More secure for public desktop apps - no secret to leak!
+- SIMPLIFIED: Users only need TWITCH_CLIENT_ID environment variable
+- REMOVED: getClientSecret() method and all Client Secret references
+- REMOVED: exchangeCodeForToken() and onTokenReplyFinished() methods
+- UPDATED: All documentation (SETUP.md, README.md) to reflect Implicit Grant
+- UPDATED: run-twitchmod.sh launcher script to only check Client ID
+- Files modified:
+  - src/twitch/twitchauth.h/cpp - Complete OAuth rewrite
+  - src/twitch/oauthserver.cpp - Added JavaScript token extractor page
+  - SETUP.md - Removed all Client Secret instructions
+  - README.md - Updated quick start guide
+  - run-twitchmod.sh - Simplified to only check Client ID
+  - changelog.txt - This entry
+
 [2025-11-02 01:44] Fixed OAuth "invalid client" error
 ------------------------------------------------------
 - FIXED: "status":400,"message":"invalid client" error when creating predictions/polls

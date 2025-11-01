@@ -78,9 +78,9 @@ void OAuthServer::onReadyRead()
     QUrl url("http://localhost" + path);
     QUrlQuery query(url);
 
-    // Check for authorization code
-    if (query.hasQueryItem("code")) {
-        QString code = query.queryItemValue("code");
+    // Check if this is the token redirect (from JavaScript)
+    if (query.hasQueryItem("access_token")) {
+        QString token = query.queryItemValue("access_token");
 
         QString successHtml = R"(
 <!DOCTYPE html>
@@ -124,7 +124,77 @@ void OAuthServer::onReadyRead()
 )";
 
         sendResponse(socket, successHtml);
-        emit authorizationCodeReceived(code);
+        emit authorizationCodeReceived(token);  // Reuse signal but with token
+
+    // Initial callback landing page - extract token from fragment with JavaScript
+    } else if (path == "/callback") {
+        QString extractHtml = R"(
+<!DOCTYPE html>
+<html>
+<head>
+    <title>TwitchMod - Processing...</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background: linear-gradient(135deg, #9147ff 0%, #772ce8 100%);
+            color: white;
+        }
+        .container {
+            text-align: center;
+            background: rgba(0, 0, 0, 0.3);
+            padding: 40px;
+            border-radius: 10px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+        h1 { font-size: 32px; margin-bottom: 20px; }
+        p { font-size: 18px; opacity: 0.9; }
+        .spinner {
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top: 4px solid white;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+    <script>
+        // Extract token from URL fragment (Implicit Grant Flow)
+        window.onload = function() {
+            const hash = window.location.hash.substring(1);
+            const params = new URLSearchParams(hash);
+            const accessToken = params.get('access_token');
+
+            if (accessToken) {
+                // Redirect to ourselves with token as query parameter
+                window.location = '/callback?access_token=' + accessToken;
+            } else {
+                document.body.innerHTML = '<div class="container"><h1>Error</h1><p>No access token found</p></div>';
+            }
+        };
+    </script>
+</head>
+<body>
+    <div class="container">
+        <div class="spinner"></div>
+        <h1>Processing Authentication...</h1>
+        <p>Please wait...</p>
+    </div>
+</body>
+</html>
+)";
+
+        sendResponse(socket, extractHtml);
+        return;  // Don't emit signal yet, wait for redirect
 
     } else if (query.hasQueryItem("error")) {
         QString error = query.queryItemValue("error");

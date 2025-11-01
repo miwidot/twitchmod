@@ -11,22 +11,20 @@
    - **Category**: `Application Integration`
 5. Click **"Create"**
 6. After creation, click **"Manage"** on your new application
-7. Copy your **Client ID**
-8. Click **"New Secret"** and copy your **Client Secret**
+7. Copy your **Client ID** - that's all you need!
 
-⚠️ **IMPORTANT**: Keep your Client Secret private! Never share it or commit it to version control.
+✅ **No Client Secret needed!** TwitchMod uses Implicit Grant Flow which doesn't require a secret.
 
-## Step 2: Configure Environment Variables
+## Step 2: Configure Client ID
 
-TwitchMod reads your Twitch credentials from environment variables for security.
+⚠️ **IMPORTANT**: TwitchMod uses **Implicit Grant Flow** - you only need the **Client ID**, NO Client Secret required!
 
 ### macOS / Linux
 
-Add these lines to your `~/.zshrc` or `~/.bashrc`:
+Add this line to your `~/.zshrc` or `~/.bashrc`:
 
 ```bash
 export TWITCH_CLIENT_ID="your_client_id_here"
-export TWITCH_CLIENT_SECRET="your_client_secret_here"
 ```
 
 Then reload your shell:
@@ -34,10 +32,10 @@ Then reload your shell:
 source ~/.zshrc  # or source ~/.bashrc
 ```
 
-**To run the app with environment variables:**
+**To run the app with environment variable:**
 ```bash
 cd build
-TWITCH_CLIENT_ID="your_client_id" TWITCH_CLIENT_SECRET="your_client_secret" ./TwitchMod.app/Contents/MacOS/TwitchMod
+TWITCH_CLIENT_ID="your_client_id" ./TwitchMod.app/Contents/MacOS/TwitchMod
 ```
 
 ### Windows
@@ -45,13 +43,11 @@ TWITCH_CLIENT_ID="your_client_id" TWITCH_CLIENT_SECRET="your_client_secret" ./Tw
 **PowerShell:**
 ```powershell
 $env:TWITCH_CLIENT_ID="your_client_id_here"
-$env:TWITCH_CLIENT_SECRET="your_client_secret_here"
 ```
 
 **Command Prompt:**
 ```cmd
 set TWITCH_CLIENT_ID=your_client_id_here
-set TWITCH_CLIENT_SECRET=your_client_secret_here
 ```
 
 **Permanent (System Environment Variables):**
@@ -60,8 +56,7 @@ set TWITCH_CLIENT_SECRET=your_client_secret_here
 3. Click "Environment Variables..."
 4. Under "User variables" click "New..."
 5. Add `TWITCH_CLIENT_ID` with your value
-6. Add `TWITCH_CLIENT_SECRET` with your value
-7. Click "OK" to save
+6. Click "OK" to save
 
 ## Step 3: Build TwitchMod
 
@@ -124,11 +119,13 @@ If empty, follow Step 2 again and restart your terminal/shell.
 ### "status":400,"message":"invalid client"
 
 This error means:
-- Your CLIENT_ID or CLIENT_SECRET is incorrect
-- You haven't set the environment variables
-- The credentials are for a different Twitch app
+- Your CLIENT_ID is incorrect
+- You haven't set the TWITCH_CLIENT_ID environment variable
+- The Client ID is for a different Twitch app
 
-Double-check your credentials at https://dev.twitch.tv/console/apps
+Double-check your Client ID at https://dev.twitch.tv/console/apps
+
+⚠️ **Note**: With Implicit Grant Flow, you DON'T need a Client Secret! Only the Client ID is required.
 
 ### "Failed to start OAuth callback server on port 8080"
 

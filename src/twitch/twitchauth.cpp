@@ -34,19 +34,6 @@ QString TwitchAuth::getClientId()
     return clientId;
 }
 
-QString TwitchAuth::getClientSecret()
-{
-    QProcessEnvironment env = QProcessEnvironment::systemEnvironment();
-    QString clientSecret = env.value("TWITCH_CLIENT_SECRET");
-
-    if (clientSecret.isEmpty()) {
-        qWarning("TWITCH_CLIENT_SECRET environment variable not set!");
-        return QString();
-    }
-
-    return clientSecret;
-}
-
 QString TwitchAuth::getRedirectUri()
 {
     QProcessEnvironment env = QProcessEnvironment::systemEnvironment();
@@ -119,7 +106,7 @@ void TwitchAuth::startAuthentication()
 
     emit authenticationStarted();
 
-    // Build OAuth URL
+    // Build OAuth URL (Implicit Grant Flow - no client secret needed!)
     QString clientId = getClientId();
     if (clientId.isEmpty()) {
         emit authenticationFailed("TWITCH_CLIENT_ID environment variable not set");
@@ -131,7 +118,7 @@ void TwitchAuth::startAuthentication()
 
     query.addQueryItem("client_id", clientId);
     query.addQueryItem("redirect_uri", getRedirectUri());
-    query.addQueryItem("response_type", "code");
+    query.addQueryItem("response_type", "token");  // Implicit Grant - token comes directly!
     query.addQueryItem("scope", getRequiredScopes().join(" "));
 
     authUrl.setQuery(query);
@@ -142,77 +129,30 @@ void TwitchAuth::startAuthentication()
 
 void TwitchAuth::handleAuthorizationCode(const QString &code)
 {
-    // TODO: Exchange authorization code for access token
-    exchangeCodeForToken(code);
+    // No longer used with Implicit Grant Flow
+    Q_UNUSED(code);
 }
 
-void TwitchAuth::onAuthCodeReceived(const QString &code)
+void TwitchAuth::onAuthCodeReceived(const QString &tokenOrCode)
 {
-    exchangeCodeForToken(code);
+    // With Implicit Grant, we receive the token directly
+    // No need to exchange code for token!
+    m_oauthServer->stop();
+    m_accessToken = tokenOrCode;
+
+    if (m_accessToken.isEmpty()) {
+        emit authenticationFailed("Invalid token received");
+        return;
+    }
+
+    // Validate token to get user info
+    validateToken();
 }
 
 void TwitchAuth::onAuthError(const QString &error)
 {
     m_oauthServer->stop();
     emit authenticationFailed(error);
-}
-
-void TwitchAuth::exchangeCodeForToken(const QString &code)
-{
-    QString clientId = getClientId();
-    QString clientSecret = getClientSecret();
-
-    if (clientId.isEmpty() || clientSecret.isEmpty()) {
-        emit authenticationFailed("OAuth credentials not configured properly");
-        return;
-    }
-
-    QUrl url("https://id.twitch.tv/oauth2/token");
-    QNetworkRequest request(url);
-    request.setHeader(QNetworkRequest::ContentTypeHeader, "application/x-www-form-urlencoded");
-
-    QUrlQuery params;
-    params.addQueryItem("client_id", clientId);
-    params.addQueryItem("client_secret", clientSecret);
-    params.addQueryItem("code", code);
-    params.addQueryItem("grant_type", "authorization_code");
-    params.addQueryItem("redirect_uri", getRedirectUri());
-
-    QNetworkReply *reply = m_networkManager->post(request, params.toString(QUrl::FullyEncoded).toUtf8());
-    connect(reply, &QNetworkReply::finished, this, &TwitchAuth::onTokenReplyFinished);
-}
-
-void TwitchAuth::onTokenReplyFinished()
-{
-    QNetworkReply *reply = qobject_cast<QNetworkReply*>(sender());
-    if (!reply) {
-        return;
-    }
-
-    m_oauthServer->stop();
-
-    if (reply->error() != QNetworkReply::NoError) {
-        emit authenticationFailed("Token exchange failed: " + reply->errorString());
-        reply->deleteLater();
-        return;
-    }
-
-    QJsonDocument doc = QJsonDocument::fromJson(reply->readAll());
-    QJsonObject obj = doc.object();
-
-    m_accessToken = obj["access_token"].toString();
-    m_refreshToken = obj["refresh_token"].toString();
-
-    if (m_accessToken.isEmpty()) {
-        emit authenticationFailed("Invalid token response");
-        reply->deleteLater();
-        return;
-    }
-
-    reply->deleteLater();
-
-    // Validate token to get user info
-    validateToken();
 }
 
 void TwitchAuth::validateToken()
