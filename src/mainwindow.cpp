@@ -2,6 +2,8 @@
 #include "channellist.h"
 #include "chatwidget.h"
 #include "userlist.h"
+#include "predictiondialog.h"
+#include "polldialog.h"
 #include "twitch/twitchauth.h"
 #include "twitch/twitchapi.h"
 
@@ -72,8 +74,12 @@ void MainWindow::createMenuBar()
     modsMenu->addAction("Banned Users");
     modsMenu->addAction("Mod Actions Log");
     modsMenu->addSeparator();
-    modsMenu->addAction("Create Poll");
-    modsMenu->addAction("Create Prediction");
+
+    QAction *createPollAction = modsMenu->addAction("Create Poll");
+    connect(createPollAction, &QAction::triggered, this, &MainWindow::onCreatePoll);
+
+    QAction *createPredictionAction = modsMenu->addAction("Create Prediction");
+    connect(createPredictionAction, &QAction::triggered, this, &MainWindow::onCreatePrediction);
 
     // Help Menu
     QMenu *helpMenu = menuBar()->addMenu("&Help");
@@ -212,4 +218,74 @@ void MainWindow::onAuthenticationFailed(const QString &error)
 
     QMessageBox::warning(this, "Authentication Failed",
                         QString("Failed to authenticate with Twitch:\n\n%1").arg(error));
+}
+
+void MainWindow::onCreatePrediction()
+{
+    if (!m_twitchAuth->isAuthenticated()) {
+        QMessageBox::warning(this, "Not Connected",
+                           "Please connect to Twitch first.");
+        return;
+    }
+
+    PredictionDialog dialog(this);
+    if (dialog.exec() == QDialog::Accepted) {
+        auto data = dialog.getPredictionData();
+
+        // TODO: Get current broadcaster ID (for now use authenticated user)
+        QString broadcasterId = m_twitchAuth->getUserId();
+
+        statusBar()->showMessage("Creating prediction...", 0);
+
+        // Create prediction via API
+        m_twitchAPI->createPrediction(broadcasterId, data.title,
+                                     data.outcomes, data.durationSeconds);
+
+        // TODO: Listen for API response and show success/error
+        QMessageBox::information(this, "Prediction Created",
+                                QString("Prediction '%1' created!\n\n"
+                                       "Duration: %2 seconds\n"
+                                       "Outcomes: %3")
+                                .arg(data.title)
+                                .arg(data.durationSeconds)
+                                .arg(data.outcomes.join(", ")));
+
+        statusBar()->showMessage("Prediction created successfully", 3000);
+    }
+}
+
+void MainWindow::onCreatePoll()
+{
+    if (!m_twitchAuth->isAuthenticated()) {
+        QMessageBox::warning(this, "Not Connected",
+                           "Please connect to Twitch first.");
+        return;
+    }
+
+    PollDialog dialog(this);
+    if (dialog.exec() == QDialog::Accepted) {
+        auto data = dialog.getPollData();
+
+        // TODO: Get current broadcaster ID (for now use authenticated user)
+        QString broadcasterId = m_twitchAuth->getUserId();
+
+        statusBar()->showMessage("Creating poll...", 0);
+
+        // Create poll via API
+        m_twitchAPI->createPoll(broadcasterId, data.title,
+                               data.choices, data.durationSeconds);
+
+        // TODO: Listen for API response and show success/error
+        QMessageBox::information(this, "Poll Created",
+                                QString("Poll '%1' created!\n\n"
+                                       "Duration: %2 seconds\n"
+                                       "Choices: %3\n"
+                                       "Channel Points Voting: %4")
+                                .arg(data.title)
+                                .arg(data.durationSeconds)
+                                .arg(data.choices.join(", "))
+                                .arg(data.channelPointsVotingEnabled ? "Yes" : "No"));
+
+        statusBar()->showMessage("Poll created successfully", 3000);
+    }
 }

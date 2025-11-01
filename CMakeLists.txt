@@ -24,6 +24,8 @@ set(SOURCES
     src/chatwidget.cpp
     src/channellist.cpp
     src/userlist.cpp
+    src/predictiondialog.cpp
+    src/polldialog.cpp
     src/twitch/twitchapi.cpp
     src/twitch/twitchauth.cpp
     src/twitch/twitchwebsocket.cpp
@@ -36,6 +38,8 @@ set(HEADERS
     src/chatwidget.h
     src/channellist.h
     src/userlist.h
+    src/predictiondialog.h
+    src/polldialog.h
     src/twitch/twitchapi.h
     src/twitch/twitchauth.h
     src/twitch/twitchwebsocket.h

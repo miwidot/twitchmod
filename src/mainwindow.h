@@ -34,6 +34,10 @@ private slots:
     void onAuthenticationSucceeded(const QString &username);
     void onAuthenticationFailed(const QString &error);
 
+    // Prediction/Poll slots
+    void onCreatePrediction();
+    void onCreatePoll();
+
 private:
     void createMenuBar();
     void createLayout();
