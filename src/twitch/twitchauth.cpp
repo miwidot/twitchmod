@@ -8,17 +8,16 @@
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QProcessEnvironment>
+#include <QTimer>
 
 TwitchAuth::TwitchAuth(QObject *parent)
     : QObject(parent)
     , m_networkManager(new QNetworkAccessManager(this))
     , m_oauthServer(new OAuthServer(this))
     , m_authenticated(false)
+    , m_pollingInterval(5000)  // Default 5 seconds
 {
-    connect(m_oauthServer, &OAuthServer::authorizationCodeReceived,
-            this, &TwitchAuth::onAuthCodeReceived);
-    connect(m_oauthServer, &OAuthServer::authorizationError,
-            this, &TwitchAuth::onAuthError);
+    // OAuthServer not used in Device Code Grant Flow
 }
 
 QString TwitchAuth::getClientId()
@@ -34,12 +33,6 @@ QString TwitchAuth::getClientId()
     return clientId;
 }
 
-QString TwitchAuth::getRedirectUri()
-{
-    QProcessEnvironment env = QProcessEnvironment::systemEnvironment();
-    QString redirectUri = env.value("TWITCH_REDIRECT_URI", DEFAULT_REDIRECT_URI);
-    return redirectUri;
-}
 
 QStringList TwitchAuth::getRequiredScopes()
 {
@@ -98,61 +91,152 @@ QStringList TwitchAuth::getRequiredScopes()
 
 void TwitchAuth::startAuthentication()
 {
-    // Start local OAuth callback server
-    if (!m_oauthServer->start(8080)) {
-        emit authenticationFailed("Failed to start OAuth callback server on port 8080");
-        return;
-    }
-
     emit authenticationStarted();
 
-    // Build OAuth URL (Implicit Grant Flow - no client secret needed!)
+    // Device Code Grant Flow - Step 1: Request device code
     QString clientId = getClientId();
     if (clientId.isEmpty()) {
         emit authenticationFailed("TWITCH_CLIENT_ID environment variable not set");
         return;
     }
 
-    QUrl authUrl("https://id.twitch.tv/oauth2/authorize");
-    QUrlQuery query;
+    QUrl url("https://id.twitch.tv/oauth2/device");
+    QNetworkRequest request(url);
+    request.setHeader(QNetworkRequest::ContentTypeHeader, "application/x-www-form-urlencoded");
 
-    query.addQueryItem("client_id", clientId);
-    query.addQueryItem("redirect_uri", getRedirectUri());
-    query.addQueryItem("response_type", "token");  // Implicit Grant - token comes directly!
-    query.addQueryItem("scope", getRequiredScopes().join(" "));
+    QUrlQuery params;
+    params.addQueryItem("client_id", clientId);
+    params.addQueryItem("scopes", getRequiredScopes().join(" "));
 
-    authUrl.setQuery(query);
-
-    // Open browser for user authentication
-    QDesktopServices::openUrl(authUrl);
+    QNetworkReply *reply = m_networkManager->post(request, params.toString(QUrl::FullyEncoded).toUtf8());
+    connect(reply, &QNetworkReply::finished, this, &TwitchAuth::onDeviceCodeReceived);
 }
 
-void TwitchAuth::handleAuthorizationCode(const QString &code)
+void TwitchAuth::onDeviceCodeReceived()
 {
-    // No longer used with Implicit Grant Flow
-    Q_UNUSED(code);
-}
-
-void TwitchAuth::onAuthCodeReceived(const QString &tokenOrCode)
-{
-    // With Implicit Grant, we receive the token directly
-    // No need to exchange code for token!
-    m_oauthServer->stop();
-    m_accessToken = tokenOrCode;
-
-    if (m_accessToken.isEmpty()) {
-        emit authenticationFailed("Invalid token received");
+    QNetworkReply *reply = qobject_cast<QNetworkReply*>(sender());
+    if (!reply) {
         return;
     }
 
-    // Validate token to get user info
-    validateToken();
+    if (reply->error() != QNetworkReply::NoError) {
+        emit authenticationFailed("Failed to get device code: " + reply->errorString());
+        reply->deleteLater();
+        return;
+    }
+
+    QJsonDocument doc = QJsonDocument::fromJson(reply->readAll());
+    QJsonObject obj = doc.object();
+
+    QString deviceCode = obj["device_code"].toString();
+    QString userCode = obj["user_code"].toString();
+    QString verificationUri = obj["verification_uri"].toString();
+    int expiresIn = obj["expires_in"].toInt();
+    int interval = obj["interval"].toInt(5);
+
+    reply->deleteLater();
+
+    if (deviceCode.isEmpty() || userCode.isEmpty()) {
+        emit authenticationFailed("Invalid device code response");
+        return;
+    }
+
+    // Store device code and polling interval
+    m_deviceCode = deviceCode;
+    m_pollingInterval = interval * 1000; // Convert to milliseconds
+
+    // Emit signal with user code and verification URI for UI to display
+    emit deviceCodeReady(userCode, verificationUri);
+
+    // Start polling for token
+    startTokenPolling();
 }
 
-void TwitchAuth::onAuthError(const QString &error)
+void TwitchAuth::startTokenPolling()
 {
-    m_oauthServer->stop();
-    emit authenticationFailed(error);
+    QTimer::singleShot(m_pollingInterval, this, &TwitchAuth::pollForToken);
+}
+
+void TwitchAuth::pollForToken()
+{
+    QString clientId = getClientId();
+    if (clientId.isEmpty() || m_deviceCode.isEmpty()) {
+        return;
+    }
+
+    QUrl url("https://id.twitch.tv/oauth2/token");
+    QNetworkRequest request(url);
+    request.setHeader(QNetworkRequest::ContentTypeHeader, "application/x-www-form-urlencoded");
+
+    QUrlQuery params;
+    params.addQueryItem("client_id", clientId);
+    params.addQueryItem("device_code", m_deviceCode);
+    params.addQueryItem("grant_type", "urn:ietf:params:oauth:grant-type:device_code");
+
+    QNetworkReply *reply = m_networkManager->post(request, params.toString(QUrl::FullyEncoded).toUtf8());
+    connect(reply, &QNetworkReply::finished, this, &TwitchAuth::onTokenPollResponse);
+}
+
+void TwitchAuth::onTokenPollResponse()
+{
+    QNetworkReply *reply = qobject_cast<QNetworkReply*>(sender());
+    if (!reply) {
+        return;
+    }
+
+    QJsonDocument doc = QJsonDocument::fromJson(reply->readAll());
+    QJsonObject obj = doc.object();
+
+    int statusCode = reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
+
+    if (statusCode == 200) {
+        // Success! We got the token
+        m_accessToken = obj["access_token"].toString();
+        m_refreshToken = obj["refresh_token"].toString();
+
+        reply->deleteLater();
+
+        if (m_accessToken.isEmpty()) {
+            emit authenticationFailed("Invalid token response");
+            return;
+        }
+
+        // Validate token to get user info
+        validateToken();
+
+    } else if (statusCode == 400) {
+        QString error = obj["error"].toString();
+
+        if (error == "authorization_pending") {
+            // User hasn't authorized yet, keep polling
+            reply->deleteLater();
+            startTokenPolling();
+
+        } else if (error == "slow_down") {
+            // We're polling too fast, increase interval
+            m_pollingInterval += 1000;
+            reply->deleteLater();
+            startTokenPolling();
+
+        } else if (error == "expired_token") {
+            // Device code expired
+            reply->deleteLater();
+            emit authenticationFailed("Device code expired. Please try again.");
+
+        } else if (error == "access_denied") {
+            // User denied authorization
+            reply->deleteLater();
+            emit authenticationFailed("Authorization denied by user");
+
+        } else {
+            // Other error
+            reply->deleteLater();
+            emit authenticationFailed("Authorization failed: " + error);
+        }
+    } else {
+        reply->deleteLater();
+        emit authenticationFailed("Unexpected response from Twitch");
+    }
 }
 
 void TwitchAuth::validateToken()

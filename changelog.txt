@@ -1,6 +1,25 @@
 TwitchMod Changelog
 ===================
 
+[2025-11-02 02:11] MAJOR: Switched to Device Code Grant Flow (twitch.tv/activate!)
+-----------------------------------------------------------------------------------
+- CHANGED: Complete OAuth rewrite from Implicit Grant to Device Code Grant Flow
+- REMOVED: Local OAuth server (port 8080) completely - no longer needed!
+- REMOVED: Browser redirect to localhost - stays on twitch.tv!
+- ADDED: User-friendly activation code dialog with clickable link
+- ADDED: Automatic polling for authorization (5 second intervals)
+- IMPROVED: Much cleaner user experience - just enter code on Twitch website!
+- SECURITY: Most secure OAuth flow for public desktop applications
+- SIMPLIFIED: No port conflicts, no localhost issues, no redirect problems!
+- User Flow: App shows code → User goes to twitch.tv/activate → Enter code → Done!
+- Files modified:
+  - src/twitch/twitchauth.h/cpp - Complete Device Code Grant implementation
+  - src/mainwindow.h/cpp - Added device code dialog with activation instructions
+  - SETUP.md - Updated with new twitch.tv/activate flow
+  - README.md - Updated quick start guide
+  - changelog.txt - This entry
+- This is the BEST OAuth flow for desktop apps - recommended by Twitch!
+
 [2025-11-02 01:51] MAJOR: Switched to Implicit Grant OAuth Flow (No Client Secret!)
 -----------------------------------------------------------------------------------
 - CHANGED: Complete OAuth flow rewrite from Authorization Code to Implicit Grant

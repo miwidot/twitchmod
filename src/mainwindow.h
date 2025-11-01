@@ -31,6 +31,7 @@ private slots:
 
     // Auth slots
     void onAuthenticationStarted();
+    void onDeviceCodeReady(const QString &userCode, const QString &verificationUri);
     void onAuthenticationSucceeded(const QString &username);
     void onAuthenticationFailed(const QString &error);
 

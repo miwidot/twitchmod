@@ -10,6 +10,8 @@
 #include <QApplication>
 #include <QMessageBox>
 #include <QVBoxLayout>
+#include <QDesktopServices>
+#include <QUrl>
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -26,6 +28,8 @@ MainWindow::MainWindow(QWidget *parent)
     // Connect auth signals
     connect(m_twitchAuth, &TwitchAuth::authenticationStarted,
             this, &MainWindow::onAuthenticationStarted);
+    connect(m_twitchAuth, &TwitchAuth::deviceCodeReady,
+            this, &MainWindow::onDeviceCodeReady);
     connect(m_twitchAuth, &TwitchAuth::authenticationSucceeded,
             this, &MainWindow::onAuthenticationSucceeded);
     connect(m_twitchAuth, &TwitchAuth::authenticationFailed,
@@ -190,7 +194,39 @@ void MainWindow::onAbout()
 void MainWindow::onAuthenticationStarted()
 {
     m_connectAction->setEnabled(false);
-    statusBar()->showMessage("Waiting for authentication in browser...", 0);
+    statusBar()->showMessage("Requesting device code from Twitch...", 0);
+}
+
+void MainWindow::onDeviceCodeReady(const QString &userCode, const QString &verificationUri)
+{
+    statusBar()->showMessage("Waiting for authorization...", 0);
+
+    // Show dialog with activation instructions
+    QString message = QString(
+        "<h2>Twitch Authorization Required</h2>"
+        "<p><b>Step 1:</b> Go to <a href=\"%1\">%1</a></p>"
+        "<p><b>Step 2:</b> Enter this code:</p>"
+        "<h1 style=\"color: #9147ff; font-family: monospace; letter-spacing: 5px;\">%2</h1>"
+        "<p><i>Waiting for you to authorize in your browser...</i></p>"
+    ).arg(verificationUri, userCode);
+
+    QMessageBox msgBox(this);
+    msgBox.setWindowTitle("Connect to Twitch");
+    msgBox.setTextFormat(Qt::RichText);
+    msgBox.setText(message);
+    msgBox.setStandardButtons(QMessageBox::Ok | QMessageBox::Cancel);
+    msgBox.setDefaultButton(QMessageBox::Ok);
+
+    // Make links clickable
+    msgBox.setTextInteractionFlags(Qt::TextBrowserInteraction);
+
+    // Open browser automatically
+    QDesktopServices::openUrl(QUrl(verificationUri));
+
+    // Show dialog (non-blocking - user can keep it open while authorizing)
+    msgBox.setModal(false);
+    msgBox.show();
+    msgBox.exec();
 }
 
 void MainWindow::onAuthenticationSucceeded(const QString &username)

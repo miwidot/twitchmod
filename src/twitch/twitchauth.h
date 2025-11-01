@@ -29,34 +29,37 @@ public:
     static QStringList getRequiredScopes();
 
     // OAuth credentials - can be set via environment variable:
-    // TWITCH_CLIENT_ID (no client secret needed with Implicit Grant!)
+    // TWITCH_CLIENT_ID (Device Code Grant Flow!)
     static QString getClientId();
-    static QString getRedirectUri();
-
-    // Default redirect URI
-    static constexpr const char* DEFAULT_REDIRECT_URI = "http://localhost:8080/callback";
 
 signals:
     void authenticationStarted();
     void authenticationSucceeded(const QString &username);
     void authenticationFailed(const QString &error);
+    void deviceCodeReady(const QString &userCode, const QString &verificationUri);
 
 private slots:
-    void onAuthCodeReceived(const QString &token);
-    void onAuthError(const QString &error);
+    void onDeviceCodeReceived();
+    void onTokenPollResponse();
     void onValidateReplyFinished();
 
 private:
     void validateToken();
+    void startTokenPolling();
+    void pollForToken();
 
     QNetworkAccessManager *m_networkManager;
-    OAuthServer *m_oauthServer;
+    OAuthServer *m_oauthServer;  // Not used anymore but keeping for compatibility
 
     QString m_accessToken;
     QString m_refreshToken;
     QString m_userId;
     QString m_username;
     bool m_authenticated;
+
+    // Device Code Grant Flow variables
+    QString m_deviceCode;
+    int m_pollingInterval;
 };
 
 #endif // TWITCHAUTH_H

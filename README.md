@@ -124,12 +124,12 @@ See **[SETUP.md](SETUP.md)** for detailed setup instructions.
 ### Quick Start
 
 1. **Register Twitch App** at https://dev.twitch.tv/console/apps
-   - OAuth Redirect URL: `http://localhost:8080/callback`
+   - OAuth Redirect URL: `http://localhost` (not used, just required by form)
    - Get your Client ID (no secret needed!)
 
 2. **Set Environment Variable:**
 
-   ✅ **Only Client ID needed** - TwitchMod uses Implicit Grant (no secret required!)
+   ✅ **Only Client ID needed** - TwitchMod uses **Device Code Grant Flow** (cleanest for desktop!)
 
    **macOS/Linux:**
    ```bash
@@ -150,9 +150,12 @@ For complete instructions including troubleshooting, see **[SETUP.md](SETUP.md)*
 ### First Time Setup
 1. Launch TwitchMod
 2. Click **File > Connect to Twitch**
-3. Authenticate in browser (you'll be redirected to Twitch)
-4. Grant permissions for all moderator scopes
-5. Return to TwitchMod - you're connected!
+3. A dialog shows you an **activation code** and opens twitch.tv/activate
+4. Enter the code on Twitch's website
+5. Grant permissions for all moderator scopes
+6. Return to TwitchMod - you're connected!
+
+✨ **Super simple!** No localhost server, no port conflicts - just enter a code!
 
 ### Moderating Channels
 1. Your mod channels appear in the left panel under "Moderating"
