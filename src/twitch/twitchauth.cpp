@@ -18,6 +18,9 @@ TwitchAuth::TwitchAuth(QObject *parent)
     , m_pollingInterval(5000)  // Default 5 seconds
 {
     // OAuthServer not used in Device Code Grant Flow
+
+    // Try to load saved token on startup
+    loadToken();
 }
 
 QString TwitchAuth::getClientId()
@@ -272,6 +275,9 @@ void TwitchAuth::onValidateReplyFinished()
     m_username = obj["login"].toString();
     m_authenticated = true;
 
+    // Save token for future sessions
+    saveToken();
+
     reply->deleteLater();
 
     emit authenticationSucceeded(m_username);
@@ -295,4 +301,54 @@ QString TwitchAuth::getUserId() const
 QString TwitchAuth::getUsername() const
 {
     return m_username;
+}
+
+void TwitchAuth::saveToken()
+{
+    if (m_accessToken.isEmpty()) {
+        return;
+    }
+
+    QSettings settings("TwitchMod", "TwitchMod");
+    settings.setValue("auth/accessToken", m_accessToken);
+    settings.setValue("auth/userId", m_userId);
+    settings.setValue("auth/username", m_username);
+
+    qDebug() << "Token saved to QSettings for user:" << m_username;
+}
+
+void TwitchAuth::loadToken()
+{
+    QSettings settings("TwitchMod", "TwitchMod");
+
+    QString savedToken = settings.value("auth/accessToken").toString();
+
+    if (savedToken.isEmpty()) {
+        qDebug() << "No saved token found";
+        return;
+    }
+
+    qDebug() << "Found saved token, validating...";
+
+    m_accessToken = savedToken;
+    m_userId = settings.value("auth/userId").toString();
+    m_username = settings.value("auth/username").toString();
+
+    // Validate the token to make sure it's still valid
+    validateToken();
+}
+
+void TwitchAuth::clearToken()
+{
+    QSettings settings("TwitchMod", "TwitchMod");
+    settings.remove("auth/accessToken");
+    settings.remove("auth/userId");
+    settings.remove("auth/username");
+
+    m_accessToken.clear();
+    m_userId.clear();
+    m_username.clear();
+    m_authenticated = false;
+
+    qDebug() << "Token cleared from QSettings";
 }

@@ -1,6 +1,71 @@
 TwitchMod Changelog
 ===================
 
+[2025-11-02 12:08] FEATURE: Complete Persistence System - Login & Channels automatically saved!
+-------------------------------------------------------------------------------------------
+- ADDED: OAuth token persistence - login only once, stays logged in!
+- ADDED: Channel list persistence - all channels saved and restored on restart
+- ADDED: IRC NAMES command parsing - user list now populates correctly!
+- IMPROVED: TwitchAuth saves/loads token from QSettings automatically
+- IMPROVED: ChannelList saves/loads channels on every add/remove
+- IMPROVED: Token validation on startup - expired tokens are detected
+- FIXED: Users were not showing in user list (NAMES wasn't parsed)
+- SECURITY: Tokens stored in QSettings (~/Library/Preferences/TwitchMod.plist on macOS)
+- UX: App remembers everything - no need to re-login or re-add channels!
+- Storage location: macOS: ~/Library/Preferences/com.TwitchMod.TwitchMod.plist
+- Files modified:
+  - src/twitch/twitchauth.h/cpp - saveToken(), loadToken(), clearToken()
+  - src/channellist.h/cpp - saveChannels(), loadChannels()
+  - src/twitch/twitchwebsocket.cpp - IRC 353 NAMES parsing with userJoined signals
+  - changelog.txt - This entry
+- Token lifetime: Twitch tokens typically valid for 60 days
+- Now you can close and reopen the app without losing anything!
+
+[2025-11-02 12:03] CRITICAL FIX: macOS App Launch Deployment - Fixed Qt rpath and code signing!
+-------------------------------------------------------------------------------------------
+- FIXED: "loading two sets of Qt binaries" crash - removed /opt/homebrew/lib rpath
+- FIXED: SIGKILL (Code Signature Invalid) on app launch
+- ADDED: QtDBus.framework to bundled frameworks (required by QtGui)
+- CHANGED: Executable rpath from /opt/homebrew/lib to @executable_path/../Frameworks
+- IMPROVED: Deep code signing of ALL dylibs, frameworks, and plugins
+- FIXED: install_name_tool to use bundled Qt frameworks instead of system Qt
+- BUILD: Re-ran macdeployqt to ensure all Qt dependencies are bundled
+- DEPLOYMENT: App now launches successfully with `open TwitchMod.app`
+- Root Cause: CMake was setting rpath to system Qt, causing library conflicts
+- Solution: install_name_tool -delete_rpath + install_name_tool -add_rpath
+- Files modified:
+  - build/TwitchMod.app/Contents/MacOS/TwitchMod - Fixed rpath settings
+  - build/TwitchMod.app/Contents/Frameworks/QtDBus.framework - Added missing framework
+  - All .dylib, .framework, .so files - Re-signed with ad-hoc signature
+  - changelog.txt - This entry
+- Build process: cmake → macdeployqt → fix rpath → sign all → codesign --deep
+- App now runs standalone without needing system Qt or environment variables!
+
+[2025-11-02 02:44] MAJOR: IRC Chat Implementation - Full Twitch IRC Integration!
+-----------------------------------------------------------------------------------
+- ADDED: Complete IRC WebSocket connection to wss://irc-ws.chat.twitch.tv:443
+- ADDED: IRC authentication with PASS, NICK, and CAP commands
+- ADDED: Automatic PING/PONG keepalive handling
+- ADDED: JOIN/PART channel functionality
+- ADDED: Send messages with PRIVMSG command
+- ADDED: IRC message parser for all Twitch IRC commands:
+  - PRIVMSG (chat messages)
+  - CLEARCHAT (bans/timeouts)
+  - CLEARMSG (message deletions)
+  - JOIN/PART (user joins/leaves)
+  - NAMES (user list)
+  - CAP (capabilities)
+- IMPROVED: TwitchWebSocket completely rewritten from EventSub to IRC protocol
+- ADDED: Auto-join IRC channels when user clicks channel in channel list
+- ADDED: Chat message signal integration with MainWindow
+- FIXED: Qt 6 deprecation warning (errorOccurred instead of error)
+- User Experience: Click channel → Auto-join IRC → See live chat!
+- Files modified:
+  - src/twitch/twitchwebsocket.h/cpp - Complete IRC protocol implementation
+  - src/mainwindow.h/cpp - IRC integration, channel selection handler
+  - changelog.txt - This entry
+- Now with REAL live Twitch chat via IRC! Messages flow in real-time!
+
 [2025-11-02 02:30] PRODUCTION READY: Hardcoded official Client ID - No setup needed!
 -----------------------------------------------------------------------------------
 - ADDED: Official TwitchMod Client ID hardcoded in production code

@@ -8,12 +8,14 @@
 #include <QMenu>
 #include <QAction>
 #include <QStatusBar>
+#include <QMap>
 
 class ChannelList;
 class ChatWidget;
 class UserList;
 class TwitchAuth;
 class TwitchAPI;
+class TwitchWebSocket;
 
 class MainWindow : public QMainWindow
 {
@@ -52,9 +54,16 @@ private:
     QTabWidget *m_chatTabs;
     UserList *m_userList;
 
+    // Channel to ChatWidget mapping
+    QMap<QString, ChatWidget*> m_channelWidgets;
+
+    // Current active channel for user list
+    QString m_currentChannel;
+
     // Twitch components
     TwitchAuth *m_twitchAuth;
     TwitchAPI *m_twitchAPI;
+    TwitchWebSocket *m_webSocket;
 
     // Menu actions
     QAction *m_connectAction;

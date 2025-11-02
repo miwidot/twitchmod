@@ -48,6 +48,11 @@ ChatWidget::ChatWidget(QWidget *parent)
 
 void ChatWidget::addMessage(const QString &username, const QString &message, const QColor &userColor)
 {
+    if (!m_chatDisplay) {
+        qWarning() << "ChatWidget::addMessage - m_chatDisplay is NULL!";
+        return;
+    }
+
     QString timestamp = QDateTime::currentDateTime().toString("HH:mm:ss");
 
     QString colorHex = userColor.name();
@@ -68,6 +73,11 @@ void ChatWidget::addMessage(const QString &username, const QString &message, con
 
 void ChatWidget::addSystemMessage(const QString &message)
 {
+    if (!m_chatDisplay) {
+        qWarning() << "ChatWidget::addSystemMessage - m_chatDisplay is NULL!";
+        return;
+    }
+
     QString timestamp = QDateTime::currentDateTime().toString("HH:mm:ss");
 
     QString html = QString("<span style='color: #999;'>[%1]</span> "

@@ -5,6 +5,7 @@
 #include <QString>
 #include <QStringList>
 #include <QNetworkAccessManager>
+#include <QSettings>
 
 class OAuthServer;
 
@@ -31,6 +32,11 @@ public:
     // OAuth credentials - can be set via environment variable:
     // TWITCH_CLIENT_ID (Device Code Grant Flow!)
     static QString getClientId();
+
+    // Token persistence
+    void saveToken();
+    void loadToken();
+    void clearToken();
 
 signals:
     void authenticationStarted();

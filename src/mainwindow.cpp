@@ -6,17 +6,20 @@
 #include "polldialog.h"
 #include "twitch/twitchauth.h"
 #include "twitch/twitchapi.h"
+#include "twitch/twitchwebsocket.h"
 
 #include <QApplication>
 #include <QMessageBox>
 #include <QVBoxLayout>
 #include <QDesktopServices>
 #include <QUrl>
+#include <QInputDialog>
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
     , m_twitchAuth(new TwitchAuth(this))
     , m_twitchAPI(new TwitchAPI(this))
+    , m_webSocket(new TwitchWebSocket(this))
 {
     setWindowTitle("TwitchMod - Twitch Moderator Client");
     resize(1280, 720);
@@ -140,6 +143,69 @@ void MainWindow::setupConnections()
     connect(m_exitAction, &QAction::triggered, this, &QApplication::quit);
     connect(m_aboutAction, &QAction::triggered, this, &MainWindow::onAbout);
 
+    // Channel selection - join IRC channel and create tab
+    connect(m_channelList, &ChannelList::channelSelected, [this](const QString &channelName) {
+        qDebug() << "Channel selected:" << channelName;
+
+        // Check if tab already exists
+        if (m_channelWidgets.contains(channelName)) {
+            // Switch to existing tab
+            ChatWidget *existingWidget = m_channelWidgets[channelName];
+            for (int i = 0; i < m_chatTabs->count(); ++i) {
+                if (m_chatTabs->widget(i) == existingWidget) {
+                    m_chatTabs->setCurrentIndex(i);
+                    return;
+                }
+            }
+        }
+
+        // Create new chat tab
+        ChatWidget *chatWidget = new ChatWidget(this);
+        chatWidget->setChannelName(channelName);
+        int tabIndex = m_chatTabs->addTab(chatWidget, "#" + channelName);
+        m_chatTabs->setCurrentIndex(tabIndex);
+
+        // Store widget mapping
+        m_channelWidgets[channelName] = chatWidget;
+
+        // Connect messageSent signal to send IRC message
+        connect(chatWidget, &ChatWidget::messageSent, [this, channelName](const QString &message) {
+            if (m_webSocket && m_webSocket->isConnected()) {
+                m_webSocket->sendMessage(channelName, message);
+            }
+        });
+
+        // Join IRC channel
+        if (m_webSocket && m_webSocket->isConnected()) {
+            m_webSocket->joinChannel(channelName);
+        }
+
+        // Update current channel for user list
+        m_currentChannel = channelName;
+        m_userList->clearUsers();
+    });
+
+    // Join Channel button handler
+    connect(m_channelList, &ChannelList::channelJoinRequested, [this]() {
+        bool ok;
+        QString channelName = QInputDialog::getText(this, "Join Channel",
+                                                     "Enter channel name:",
+                                                     QLineEdit::Normal,
+                                                     "", &ok);
+        if (ok && !channelName.isEmpty()) {
+            // Remove # if user typed it
+            if (channelName.startsWith("#")) {
+                channelName = channelName.mid(1);
+            }
+
+            // Add to channel list as "Watching"
+            m_channelList->addChannel(channelName, false);
+
+            // Auto-select it to join
+            emit m_channelList->channelSelected(channelName);
+        }
+    });
+
     // Close tab on close button click
     connect(m_chatTabs, &QTabWidget::tabCloseRequested, [this](int index) {
         if (m_chatTabs->count() > 1) { // Keep at least one tab
@@ -237,6 +303,56 @@ void MainWindow::onAuthenticationSucceeded(const QString &username)
     // Set up API with auth token
     m_twitchAPI->setAccessToken(m_twitchAuth->getAccessToken());
     m_twitchAPI->setClientId(TwitchAuth::getClientId());
+
+    // Connect IRC status signals
+    QObject::connect(m_webSocket, &TwitchWebSocket::connected,
+                    [this]() {
+        statusBar()->showMessage("IRC Connected - Ready to chat!", 0);
+        qDebug() << "IRC WebSocket connected!";
+    });
+
+    QObject::connect(m_webSocket, &TwitchWebSocket::disconnected,
+                    [this]() {
+        statusBar()->showMessage("IRC Disconnected", 0);
+        qDebug() << "IRC WebSocket disconnected!";
+    });
+
+    // Connect to IRC chat
+    m_webSocket->connect(m_twitchAuth->getAccessToken(), username);
+    statusBar()->showMessage("Connecting to IRC...", 0);
+
+    // Connect chat signals to display messages
+    QObject::connect(m_webSocket, &TwitchWebSocket::chatMessageReceived,
+                    [this](const QString &channel, const QString &user, const QString &message, const QString &) {
+        qDebug() << "[" << channel << "]" << user << ":" << message;
+
+        // Find the ChatWidget for this channel
+        if (m_channelWidgets.contains(channel)) {
+            ChatWidget *chatWidget = m_channelWidgets[channel];
+            // Random color for each user (could be improved with persistent color mapping)
+            QColor userColor = QColor::fromHsl((qHash(user) % 360), 200, 150);
+            chatWidget->addMessage(user, message, userColor);
+        } else {
+            qDebug() << "WARNING: No ChatWidget found for channel:" << channel;
+        }
+    });
+
+    // Connect user JOIN/PART signals for user list
+    QObject::connect(m_webSocket, &TwitchWebSocket::userJoined,
+                    [this](const QString &channel, const QString &username) {
+        if (channel == m_currentChannel) {
+            m_userList->addUser(username);
+            qDebug() << "Added user to list:" << username;
+        }
+    });
+
+    QObject::connect(m_webSocket, &TwitchWebSocket::userParted,
+                    [this](const QString &channel, const QString &username) {
+        if (channel == m_currentChannel) {
+            m_userList->removeUser(username);
+            qDebug() << "Removed user from list:" << username;
+        }
+    });
 
     statusBar()->showMessage("Connected as " + username, 5000);
 

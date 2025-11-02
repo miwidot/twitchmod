@@ -5,6 +5,8 @@
 #include <QTreeWidget>
 #include <QPushButton>
 #include <QVBoxLayout>
+#include <QMenu>
+#include <QSettings>
 
 class ChannelList : public QWidget
 {
@@ -17,6 +19,10 @@ public:
     void removeChannel(const QString &channelName);
     void clearChannels();
 
+    // Channel persistence
+    void saveChannels();
+    void loadChannels();
+
 signals:
     void channelSelected(const QString &channelName);
     void channelJoinRequested();
@@ -24,6 +30,8 @@ signals:
 private slots:
     void onItemClicked(QTreeWidgetItem *item, int column);
     void onJoinChannel();
+    void showContextMenu(const QPoint &pos);
+    void onRemoveChannel();
 
 private:
     QTreeWidget *m_treeWidget;
